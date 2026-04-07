@@ -1,0 +1,67 @@
+{
+  "project_info": {
+    "project_number": "924653423828",
+    "project_id": "ras-gold",
+    "storage_bucket": "ras-gold.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924653423828:android:08e8f3e09ddb0329717f41",
+        "android_client_info": {
+          "package_name": "com.example.ras_gold_admin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZzk_S18UGZcEhfWNpjJhCHy0tU1p_LCY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924653423828:android:b25edf5c65dc3d5e717f41",
+        "android_client_info": {
+          "package_name": "com.example.raz_gold"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZzk_S18UGZcEhfWNpjJhCHy0tU1p_LCY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:924653423828:android:28a2d79b7699c467717f41",
+        "android_client_info": {
+          "package_name": "com.luzidcraft.raz_gold"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBZzk_S18UGZcEhfWNpjJhCHy0tU1p_LCY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
