@@ -42,7 +42,7 @@ class _HomePageState extends State<HomePage> {
     {
       'name': 'Pay Now',
       'icon': Icons.payment,
-      'color': const Color(0xFFF06292)
+      'color': const Color(0xFFF06292),
     },
     // {
     //   'name': 'Wishlist',
@@ -57,7 +57,7 @@ class _HomePageState extends State<HomePage> {
     {
       'name': 'View Transaction',
       'icon': Icons.receipt,
-      'color': const Color(0xFF81C784)
+      'color': const Color(0xFF81C784),
     },
   ];
 
@@ -67,13 +67,13 @@ class _HomePageState extends State<HomePage> {
 
   List banner = [];
   getSlider() {
-    Provider.of<BannerProvider>(context, listen: false)
-        .getSlide('Banner')
-        .then((onvalue) {
-      setState(() {
-        banner = onvalue;
-      });
-    });
+    Provider.of<BannerProvider>(context, listen: false).getSlide('Banner').then(
+      (onvalue) {
+        setState(() {
+          banner = onvalue;
+        });
+      },
+    );
     Provider.of<BannerProvider>(context, listen: false).fetchData().then((val) {
       setState(() {
         stores = val;
@@ -108,7 +108,7 @@ class _HomePageState extends State<HomePage> {
           goldPrices = {
             '1g': goldrateList[0]["gram"],
             '8g': goldrateList[0]["pavan"],
-            '18K': goldrateList[0]["18gram"]
+            '18K': goldrateList[0]["18gram"],
           };
         });
       }
@@ -130,15 +130,18 @@ class _HomePageState extends State<HomePage> {
   }
 
   getProduct() {
-    Provider.of<Product>(context, listen: false).getProduct().then((onValue) {
-      setState(() {
-        products = onValue ?? [];
-      });
-    }).catchError((error) {
-      setState(() {
-        products = []; // Fallback to empty list on error
-      });
-    });
+    Provider.of<Product>(context, listen: false)
+        .getProduct()
+        .then((onValue) {
+          setState(() {
+            products = onValue ?? [];
+          });
+        })
+        .catchError((error) {
+          setState(() {
+            products = []; // Fallback to empty list on error
+          });
+        });
   }
 
   @override
@@ -156,8 +159,10 @@ class _HomePageState extends State<HomePage> {
   Map<String, dynamic> aboutUsData = {};
   Future<void> fetchData() async {
     try {
-      QuerySnapshot querySnapshot =
-          await FirebaseFirestore.instance.collection('aboutUs').limit(1).get();
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('aboutUs')
+          .limit(1)
+          .get();
 
       if (querySnapshot.docs.isNotEmpty) {
         var data = querySnapshot.docs.first.data() as Map<String, dynamic>;
@@ -200,7 +205,7 @@ Kindly share the details. Thank you!
             fontWeight: FontWeight.bold,
             letterSpacing: 1.5,
             foreground: Paint()
-              ..shader =const LinearGradient(
+              ..shader = const LinearGradient(
                 colors: [
                   Color(0xFFedc860),
                   Color(0xFFd89f32),
@@ -227,9 +232,7 @@ Kindly share the details. Thank you!
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const ProfileScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
               );
             },
           ),
@@ -393,10 +396,7 @@ Kindly share the details. Thank you!
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFFFFBF0),
-            Color(0xFFFFF8E1),
-          ],
+          colors: [Color(0xFFFFFBF0), Color(0xFFFFF8E1)],
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
@@ -412,10 +412,7 @@ Kindly share the details. Thank you!
             offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: Colors.amber.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.amber.withOpacity(0.2), width: 1),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -437,77 +434,77 @@ Kindly share the details. Thank you!
     return Row(
       children: [
         Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [
-                  Color.fromARGB(255, 251, 251, 251),
-                  Color.fromARGB(255, 255, 255, 255)
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.amber.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
+          padding: const EdgeInsets.all(5),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color.fromARGB(255, 251, 251, 251),
+                Color.fromARGB(255, 255, 255, 255),
               ],
             ),
-            child: const Center(
-              child: Image(
-                image: AssetImage("assets/images/app_icon.png"),
-                width: 40,
-                fit: BoxFit.cover,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.amber.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
               ),
-            )
-            // Icon(
-            //   Icons.diamond_outlined,
-            //   color: Colors.white,
-            //   size: 24,
-            // ),
+            ],
+          ),
+          child: const Center(
+            child: Image(
+              image: AssetImage("assets/images/app_icon.png"),
+              width: 40,
+              fit: BoxFit.cover,
             ),
+          ),
+          // Icon(
+          //   Icons.diamond_outlined,
+          //   color: Colors.white,
+          //   size: 24,
+          // ),
+        ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    ShaderMask(
-      shaderCallback: (bounds) => const LinearGradient(
-        colors: [
-          Color(0xFFedc860),
-          Color(0xFFd89f32),
-          Color(0xFFe1b753),
-        ],
-      ).createShader(bounds),
-      child: const Text(
-        "Today's Gold Rate",
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: Colors.white, // must
-        ),
-      ),
-    ),
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFFedc860),
+                    Color(0xFFd89f32),
+                    Color(0xFFe1b753),
+                  ],
+                ).createShader(bounds),
+                child: const Text(
+                  "Today's Gold Rate",
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white, // must
+                  ),
+                ),
+              ),
 
- ShaderMask(
-      shaderCallback: (bounds) => LinearGradient(
-        colors: [
-          Color(0xFFedc860),
-          Color(0xFFd89f32),
-          Color(0xFFe1b753),
-        ],
-      ).createShader(bounds),
-      child: const Text(
-        'Live market prices',
-        style: TextStyle(
-          fontSize: 14,
-          color: Colors.white, // must
-        ),
-      ),
-    ),
-  ],
-)
+              ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    Color(0xFFedc860),
+                    Color(0xFFd89f32),
+                    Color(0xFFe1b753),
+                  ],
+                ).createShader(bounds),
+                child: const Text(
+                  'Live market prices',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.white, // must
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -515,45 +512,45 @@ Kindly share the details. Thank you!
             color: const Color(0xFF460218),
             borderRadius: BorderRadius.circular(12),
           ),
-          child:  Row(
-  mainAxisSize: MainAxisSize.min,
-  children: [
-    ShaderMask(
-      shaderCallback: (bounds) =>const LinearGradient(
-        colors: [
-          Color(0xFFedc860),
-          Color(0xFFd89f32),
-          Color(0xFFe1b753),
-        ],
-      ).createShader(bounds),
-      child: const Icon(
-        Icons.trending_up,
-        color: Colors.white, // must
-        size: 14,
-      ),
-    ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ShaderMask(
+                shaderCallback: (bounds) => const LinearGradient(
+                  colors: [
+                    Color(0xFFedc860),
+                    Color(0xFFd89f32),
+                    Color(0xFFe1b753),
+                  ],
+                ).createShader(bounds),
+                child: const Icon(
+                  Icons.trending_up,
+                  color: Colors.white, // must
+                  size: 14,
+                ),
+              ),
 
-    const SizedBox(width: 4),
+              const SizedBox(width: 4),
 
-    ShaderMask(
-      shaderCallback: (bounds) => LinearGradient(
-        colors: [
-          Color(0xFFedc860),
-          Color(0xFFd89f32),
-          Color(0xFFe1b753),
-        ],
-      ).createShader(bounds),
-      child: const Text(
-        'LIVE',
-        style: TextStyle(
-          color: Colors.white, // must
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    ),
-  ],
-)
+              ShaderMask(
+                shaderCallback: (bounds) => LinearGradient(
+                  colors: [
+                    Color(0xFFedc860),
+                    Color(0xFFd89f32),
+                    Color(0xFFe1b753),
+                  ],
+                ).createShader(bounds),
+                child: const Text(
+                  'LIVE',
+                  style: TextStyle(
+                    color: Colors.white, // must
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -664,11 +661,7 @@ Kindly share the details. Thank you!
         color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(10),
       ),
-      child: Icon(
-        icon,
-        color: color,
-        size: 20,
-      ),
+      child: Icon(icon, color: color, size: 20),
     );
   }
 
@@ -702,18 +695,11 @@ Kindly share the details. Thank you!
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.access_time,
-          size: 14,
-          color: Colors.grey[600],
-        ),
+        Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
         const SizedBox(width: 4),
         Text(
           'Last updated: ${_getCurrentTime()}',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
         ),
       ],
     );
@@ -732,10 +718,7 @@ Kindly share the details. Thank you!
         children: [
           const Text(
             'Categories',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -764,13 +747,13 @@ Kindly share the details. Thank you!
                           height: 60,
                           width: 60,
                           decoration: BoxDecoration(
-                              color: const Color(0xFFEEF7EE),
-                              shape: BoxShape.circle,
-                              border:
-                                  Border.all(color: const Color(0xFFE0E0E0)),
-                              image: DecorationImage(
-                                  image: NetworkImage(
-                                      categories[index]["image"]))),
+                            color: const Color(0xFFEEF7EE),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: const Color(0xFFE0E0E0)),
+                            image: DecorationImage(
+                              image: NetworkImage(categories[index]["image"]),
+                            ),
+                          ),
                         ),
                         const SizedBox(height: 8),
                         Text(
@@ -801,10 +784,7 @@ Kindly share the details. Thank you!
         children: [
           const Text(
             'Quick Access',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           GridView.builder(
@@ -822,23 +802,27 @@ Kindly share the details. Thank you!
                 onTap: () {
                   if (_userName != "") {
                     if (links[index]['name'] == "Pay Now") {
-                      // final snackBar = SnackBar(
-                      //     content: const Text("Currently not available...!"));
+                      final snackBar = SnackBar(
+                        content: const Text("Currently not available...!"),
+                      );
 
                       // ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const MakePayment()));
+                      // Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //         builder: (context) => const MakePayment()));
                     } else {
                       Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => const TransactionScreen()));
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const TransactionScreen(),
+                        ),
+                      );
                     }
                   } else {
                     const snackBar = SnackBar(
-                        content: Text("Your not loggin...! Please Login"));
+                      content: Text("Your not loggin...! Please Login"),
+                    );
 
                     ScaffoldMessenger.of(context).showSnackBar(snackBar);
                   }
@@ -900,10 +884,7 @@ Kindly share the details. Thank you!
         children: [
           const Text(
             'Our Stores',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
           ListView.builder(
@@ -916,7 +897,8 @@ Kindly share the details. Thank you!
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (context) => const AboutUsPage()),
+                      builder: (context) => const AboutUsPage(),
+                    ),
                   );
                 },
                 child: Container(
@@ -973,7 +955,9 @@ Kindly share the details. Thank you!
                       ),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFEEF7EE),
                           borderRadius: BorderRadius.circular(6),
@@ -1010,17 +994,16 @@ Kindly share the details. Thank you!
             children: [
               const Text(
                 'Featured Products',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               TextButton(
                 onPressed: () {
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const CategoryScreen()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const CategoryScreen(),
+                    ),
+                  );
                 },
                 child: const Text(
                   'View All',
@@ -1083,12 +1066,14 @@ Kindly share the details. Thank you!
                         child: Center(
                           child: products[index]['photo'] != ""
                               ? Image(
-                                  image: NetworkImage(products[index]['photo']))
+                                  image: NetworkImage(products[index]['photo']),
+                                )
                               : Icon(
                                   FontAwesomeIcons.gem,
                                   size: 40,
-                                  color:
-                                      const Color(0xFF4CAF50).withOpacity(0.7),
+                                  color: const Color(
+                                    0xFF4CAF50,
+                                  ).withOpacity(0.7),
                                 ),
                         ),
                       ),
