@@ -1,3 +1,5 @@
+// ignore_for_file: file_names
+
 import 'package:flutter/material.dart';
 
 import '../providers/category.dart';
@@ -7,26 +9,31 @@ class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
 
   @override
-  _CategoryScreenState createState() => _CategoryScreenState();
+  State<CategoryScreen> createState() => _CategoryScreenState();
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  var categoryDb = Category();
+  static const Color _gold = Color(0xFFC89A32);
+  static const Color _deepGold = Color(0xFF9F741E);
+  static const Color _ink = Color(0xFF171717);
+  static const Color _muted = Color(0xFF6E6559);
+  static const Color _line = Color(0xFFEAE2D3);
+
+  final Category categoryDb = Category();
   var categoryList = [];
-  Future loadCategoary() async {
+
+  Future<void> loadCategoary() async {
     categoryDb.initiliase();
     categoryDb.getCategorywithImg().then((value) {
-      // print(value);
+      if (!mounted) return;
       setState(() {
         categoryList = value;
       });
-      // print(categoryList);
     });
   }
 
   @override
   void initState() {
-    // TODO: implement initState
     super.initState();
     loadCategoary();
   }
@@ -34,131 +41,162 @@ class _CategoryScreenState extends State<CategoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blueGrey.shade50,
-      appBar: AppBar(
-  backgroundColor: const Color(0xFF460218),
-  elevation: 2,
-  centerTitle: true,
-
-  // base icon color (must be white)
-  iconTheme: const IconThemeData(color: Colors.white),
-
-  //  Title gradient
-  title: ShaderMask(
-    shaderCallback: (bounds) => LinearGradient(
-      colors: [
-        Color(0xFFedc860),
-        Color(0xFFd89f32),
-        Color(0xFFe1b753),
-      ],
-    ).createShader(bounds),
-    child: const Text(
-      "Category",
-      style: TextStyle(
-        color: Colors.white, // must
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
-      ),
-    ),
-  ),
-
-  //  Back icon gradient
-  leading: ShaderMask(
-    shaderCallback: (bounds) => LinearGradient(
-      colors: [
-        Color(0xFFedc860),
-        Color(0xFFd89f32),
-        Color(0xFFe1b753),
-      ],
-    ).createShader(bounds),
-    child: IconButton(
-      icon: const Icon(Icons.arrow_back, color: Colors.white),
-      onPressed: () {
-        Navigator.pop(context);
-      },
-    ),
-  ),
-      ),
+      backgroundColor: const Color(0xFFF7F5F1),
+      appBar: _buildAppBar(),
       body: categoryList.isNotEmpty
-          ? Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SizedBox(
-                  width: double.infinity,
-                  child: ListView.builder(
-                      scrollDirection: Axis.vertical,
-                      itemCount: categoryList.length,
-                      itemBuilder: (context, index) {
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                          builder: (context) =>
-                                              ProductListScreen(
-                                                  category: categoryList[index]
-                                                      ["name"])));
-                                },
-                                child: Container(
-                                  width: double.infinity,
-                                  height:
-                                      MediaQuery.of(context).size.height * .12,
-                                  decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(6)),
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(8.0),
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              SizedBox(
-                                                height: MediaQuery.of(context)
-                                                        .size
-                                                        .height *
-                                                    .045,
-                                                child: const Image(
-                                                  height: 15,
-                                                  width: 28,
-                                                  color: Colors.black54,
-                                                  image: AssetImage(
-                                                      "assets/images/icons8-jewelry-64.png"),
-                                                ),
-                                              ),
-                                              const SizedBox(
-                                                width: 10,
-                                              ),
-                                              Text(
-                                                categoryList[index]["name"],
-                                                style: const TextStyle(
-                                                    fontWeight: FontWeight.w500,
-                                                    fontSize: 15),
-                                              ),
-                                            ],
-                                          ),
-                                          const Text(
-                                            "Tap to Show Product",
-                                            style: TextStyle(
-                                                color: Colors.grey,
-                                                fontSize: 11),
-                                          )
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                )),
-                            const SizedBox(
-                              height: 10,
-                            )
-                          ],
-                        );
-                      })))
-          : const Center(child: Text("No Category Found....")),
+          ? ListView.separated(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+              itemCount: categoryList.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              itemBuilder: (context, index) {
+                final category = categoryList[index];
+                return _categoryTile(category);
+              },
+            )
+          : _emptyState(),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar() {
+    return AppBar(
+      backgroundColor: const Color(0xFFF7F5F1),
+      elevation: 0,
+      centerTitle: true,
+      iconTheme: const IconThemeData(color: _ink),
+      title: const Text(
+        'Categories',
+        style: TextStyle(
+          color: _ink,
+          fontWeight: FontWeight.w800,
+          fontSize: 18,
+        ),
+      ),
+    );
+  }
+
+  Widget _categoryTile(dynamic category) {
+    final String name = '${category["name"] ?? "Category"}';
+    final String? image = category["image"];
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductListScreen(category: name),
+          ),
+        );
+      },
+      child: Container(
+        height: 92,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _line),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: .045),
+              blurRadius: 16,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 68,
+              height: 68,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7E8),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: _line),
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: image != null && image.isNotEmpty
+                    ? Image.network(
+                        image,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => _fallbackIcon(),
+                      )
+                    : _fallbackIcon(),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  const Text(
+                    'Explore gold collections',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: _muted, fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF7E8),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.chevron_right_rounded, color: _gold),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _fallbackIcon() {
+    return const Center(
+      child: Image(
+        height: 34,
+        width: 34,
+        color: _deepGold,
+        image: AssetImage("assets/images/icons8-jewelry-64.png"),
+      ),
+    );
+  }
+
+  Widget _emptyState() {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _line),
+        ),
+        child: const Text(
+          "No Category Found",
+          style: TextStyle(
+            color: _muted,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

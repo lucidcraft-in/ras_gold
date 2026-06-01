@@ -1,16 +1,17 @@
+// ignore_for_file: file_names
+
 import 'dart:convert';
 
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:raz_gold/providers/goldrate.dart';
 import 'package:raz_gold/screens/categoryScreen.dart';
 import 'package:raz_gold/screens/makePayment.dart';
 import 'package:raz_gold/screens/transaction_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../providers/banner.dart';
 import '../providers/category.dart';
@@ -27,63 +28,113 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // Mock data for the UI
+  static const Color _gold = Color(0xFFC89A32);
+  static const Color _deepGold = Color(0xFF9F741E);
+  static const Color _ink = Color(0xFF171717);
+  static const Color _muted = Color(0xFF6E6559);
+  static const Color _line = Color(0xFFEAE2D3);
+  static const Color _cream = Color(0xFFFFFCF7);
+
+  final NumberFormat _money = NumberFormat.currency(
+    locale: 'en_IN',
+    symbol: '₹',
+    decimalDigits: 0,
+  );
+
   Map<String, double> goldPrices = {'1g': 0.00, '8g': 0.00, '18K': 0.00};
-
-  List categories = [
-    // {'name': 'Rings', 'icon': Icons.circle},
-    // {'name': 'Necklaces', 'icon': FontAwesomeIcons.gem},
-    // {'name': 'Earrings', 'icon': FontAwesomeIcons.earListen},
-    // {'name': 'Bracelets', 'icon': FontAwesomeIcons.handHoldingHeart},
-    // {'name': 'Pendants', 'icon': FontAwesomeIcons.medal},
-  ];
-
-  final List<Map<String, dynamic>> quickLinks = [
-    {
-      'name': 'Pay Now',
-      'icon': Icons.payment,
-      'color': const Color(0xFFF06292),
-    },
-    // {
-    //   'name': 'Wishlist',
-    //   'icon': Icons.favorite_border,
-    //   'color': Color(0xFF64B5F6)
-    // },
-    // {
-    //   'name': 'Gold Rates',
-    //   'icon': FontAwesomeIcons.chartLine,
-    //   'color': Color(0xFFFFB74D)
-    // },
-    {
-      'name': 'View Transaction',
-      'icon': Icons.receipt,
-      'color': const Color(0xFF81C784),
-    },
-  ];
-
+  List categories = [];
   List stores = [];
-
   List products = [];
-
   List banner = [];
-  getSlider() {
+  List goldrateList = [];
+  Map<String, dynamic> aboutUsData = {};
+  String _userName = "";
+
+  final List<Map<String, dynamic>> _fallbackCategories = const [
+    {
+      'name': 'Rings',
+      'category': 'Rings',
+      'asset': 'assets/images/ring image.jpg',
+    },
+    {
+      'name': 'Bangles',
+      'category': 'Bangles',
+      'asset': 'assets/images/bracelet.jpg',
+    },
+    {
+      'name': 'Necklaces',
+      'category': 'Necklaces',
+      'asset': 'assets/images/necklace.png',
+    },
+    {
+      'name': 'Earrings',
+      'category': 'Earrings',
+      'asset': 'assets/images/gold earrings.jpg',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _fallbackProducts = const [
+    {
+      'productName': 'Gold Ring',
+      'productCode': '22K',
+      'gram': '₹24,520',
+      'category': 'Rings',
+      'asset': 'assets/images/ring image.jpg',
+    },
+    {
+      'productName': 'Gold Bangles',
+      'productCode': '22K',
+      'gram': '₹48,750',
+      'category': 'Bangles',
+      'asset': 'assets/images/bracelet.jpg',
+    },
+    {
+      'productName': 'Gold Necklace',
+      'productCode': '22K',
+      'gram': '₹1,25,300',
+      'category': 'Necklaces',
+      'asset': 'assets/images/necklace.png',
+    },
+    {
+      'productName': 'Gold Earrings',
+      'productCode': '22K',
+      'gram': '₹18,680',
+      'category': 'Earrings',
+      'asset': 'assets/images/gold earrings.jpg',
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    getUser();
+    getSlider();
+    getGoldrate();
+    getCategory();
+    getProduct();
+    fetchData();
+  }
+
+  void getSlider() {
     Provider.of<BannerProvider>(context, listen: false).getSlide('Banner').then(
       (onvalue) {
+        if (!mounted) return;
         setState(() {
           banner = onvalue;
         });
       },
     );
     Provider.of<BannerProvider>(context, listen: false).fetchData().then((val) {
+      if (!mounted) return;
       setState(() {
         stores = val;
       });
     });
   }
 
-  String _userName = "";
-  getUser() async {
+  Future<void> getUser() async {
     SharedPreferences pref = await SharedPreferences.getInstance();
+    if (!mounted) return;
     if (pref.containsKey("user")) {
       String? userData = pref.getString("user");
       if (userData != null) {
@@ -99,675 +150,529 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  List goldrateList = [];
-  getGoldrate() {
+  void getGoldrate() {
     Provider.of<Goldrate>(context, listen: false).read().then((value) {
-      if (value != null) {
-        setState(() {
-          goldrateList = value;
-          goldPrices = {
-            '1g': goldrateList[0]["gram"],
-            '8g': goldrateList[0]["pavan"],
-            '18K': goldrateList[0]["18gram"],
-          };
-        });
-      }
+      if (!mounted || value == null || value.isEmpty) return;
+      setState(() {
+        goldrateList = value;
+        goldPrices = {
+          '1g': _toDouble(goldrateList[0]["gram"]),
+          '8g': _toDouble(goldrateList[0]["pavan"]),
+          '18K': _toDouble(goldrateList[0]["18gram"]),
+        };
+      });
     });
   }
 
   void getCategory() {
     Provider.of<Category>(context, listen: false).getCategory().then((onValue) {
+      if (!mounted) return;
       setState(() {
-        // final List<Map<String, dynamic>> cleanedList =
-        //     onValue.map<Map<String, dynamic>>((item) {
-        //   return Map<String, dynamic>.from(item);
-        // }).toList();
-
-        // categories = convertCategories(cleanedList);
         categories = onValue;
       });
     });
   }
 
-  getProduct() {
-    Provider.of<Product>(context, listen: false)
-        .getProduct()
-        .then((onValue) {
-          setState(() {
-            products = onValue ?? [];
-          });
-        })
-        .catchError((error) {
-          setState(() {
-            products = []; // Fallback to empty list on error
-          });
-        });
+  void getProduct() {
+    Provider.of<Product>(context, listen: false).getProduct().then((onValue) {
+      if (!mounted) return;
+      setState(() {
+        products = onValue ?? [];
+      });
+    }).catchError((error) {
+      if (!mounted) return;
+      setState(() {
+        products = [];
+      });
+    });
   }
 
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    getUser();
-    getSlider();
-    getGoldrate();
-    getCategory();
-    getProduct();
-    fetchData();
-  }
-
-  Map<String, dynamic> aboutUsData = {};
   Future<void> fetchData() async {
     try {
-      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
-          .collection('aboutUs')
-          .limit(1)
-          .get();
+      QuerySnapshot querySnapshot =
+          await FirebaseFirestore.instance.collection('aboutUs').limit(1).get();
 
-      if (querySnapshot.docs.isNotEmpty) {
-        var data = querySnapshot.docs.first.data() as Map<String, dynamic>;
-        setState(() {
-          aboutUsData = data;
-        });
-      } else {}
-    } catch (e) {}
-  }
-
-  void _launchWhatsApp() async {
-    String phone = "91${aboutUsData["phone"]}";
-    // Compose a meaningful WhatsApp message with product details
-    String message = '''
-Hello, I am interested in joining your gold scheme.
-Kindly share the details. Thank you!
-''';
-
-    // Encode message for URL
-    String whatsappUrl =
-        "https://wa.me/$phone/?text=${Uri.encodeComponent(message)}";
-
-    try {
-      final Uri url = Uri.parse(whatsappUrl);
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!mounted || querySnapshot.docs.isEmpty) return;
+      var data = querySnapshot.docs.first.data() as Map<String, dynamic>;
+      setState(() {
+        aboutUsData = data;
+      });
     } catch (e) {
-      debugPrint("Error launching WhatsApp: $e");
+      debugPrint('Unable to load store details: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Color(0xFF460218),
-        title: Text(
-          'Ras Gold & Diamonds',
-          style: TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.5,
-            foreground: Paint()
-              ..shader = const LinearGradient(
-                colors: [
-                  Color(0xFFedc860),
-                  Color(0xFFd89f32),
-                  Color(0xFFe1b753),
-                ],
-              ).createShader(Rect.fromLTWH(0, 0, 200, 20)),
+      backgroundColor: const Color(0xFFF7F5F1),
+      body: SafeArea(
+        bottom: false,
+        child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 92),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildHeader(),
+              const SizedBox(height: 16),
+              _buildHero(),
+              // const SizedBox(height: 14),
+              // _buildBalanceCard(),
+              const SizedBox(height: 14),
+              _buildQuickActions(),
+              const SizedBox(height: 14),
+              _buildGoldRateSection(),
+              const SizedBox(height: 10),
+              _buildSchemeProgress(),
+              const SizedBox(height: 10),
+              _buildCategoriesSection(),
+              const SizedBox(height: 10),
+              _buildProductsSection(),
+              const SizedBox(height: 10),
+              _buildStoreSection(),
+            ],
           ),
         ),
-        actions: [
-          IconButton(
-            icon: ShaderMask(
-              shaderCallback: (bounds) => LinearGradient(
-                colors: [
-                  Color(0xFFedc860),
-                  Color(0xFFd89f32),
-                  Color(0xFFe1b753),
-                ],
-              ).createShader(bounds),
-              child: const Icon(
-                Icons.person_outline,
-                color: Colors.white, // important
-              ),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const ProfileScreen()),
-              );
-            },
-          ),
-        ],
       ),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (_userName != "")
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Text("Welcome Back, ${_userName.toUpperCase()}"),
-                  ),
-                // Section 1: Banner
-                _buildBannerSection(),
-
-                // Section 2: Gold Price Section
-                _buildGoldPriceSection(goldPrices),
-
-                // Section 3: User Balance
-                // _buildUserBalanceSection(userBalance),
-
-                // Section 4: Product Categories
-                _buildCategoriesSection(categories),
-
-                // Section 5: Quick Links
-                _buildQuickLinksSection(quickLinks),
-
-                // Section 6: Store Locations
-                _buildStoreLocationsSection(stores),
-
-                // Section 7: Product Listing
-                _buildProductsSection(products),
-
-                // Extra padding at the bottom for floating button
-                const SizedBox(height: 70),
-              ],
-            ),
-          ),
-
-          // WhatsApp floating button
-          Positioned(
-            right: 20,
-            bottom: 20,
-            child: FloatingActionButton(
-              backgroundColor: const Color(0xFF460218),
-              onPressed: _launchWhatsApp,
-              child: const FaIcon(FontAwesomeIcons.whatsapp),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBannerSection() {
-    return banner.isNotEmpty
-        ? SizedBox(
-            height: 180,
-            width: double.infinity, // Ensures full width
-            child: CarouselSlider.builder(
-              itemCount: banner.length,
-              itemBuilder: (context, index, realIndex) {
-                return SizedBox(
-                  width: MediaQuery.of(context).size.width,
-                  child: Image(
-                    image: NetworkImage(banner[index]['photo']),
-                    fit: BoxFit.cover, // Ensures image covers the entire space
-                  ),
-                );
-              },
-              options: CarouselOptions(
-                height: 180,
-                autoPlay: true,
-                enlargeCenterPage: false, // Set to false for true full-width
-                viewportFraction:
-                    1.0, // Full width (1.0 = 100% of screen width)
-                autoPlayInterval: const Duration(seconds: 3),
-                autoPlayAnimationDuration: const Duration(milliseconds: 800),
-              ),
-            ),
-          )
-        : Container();
-  }
-
-  // Widget _buildGoldPriceSection(Map<String, double> prices) {
-  //   return Container(
-  //     margin: EdgeInsets.fromLTRB(16, 0, 16, 16),
-  //     padding: EdgeInsets.all(16),
-  //     decoration: BoxDecoration(
-  //       color: Colors.white,
-  //       borderRadius: BorderRadius.circular(16),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           color: Colors.black.withOpacity(0.05),
-  //           blurRadius: 10,
-  //           offset: Offset(0, 5),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         Text(
-  //           'Today\'s Gold Rate',
-  //           style: TextStyle(
-  //             fontSize: 18,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //         SizedBox(height: 16),
-  //         Row(
-  //           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //           children: prices.entries.map((entry) {
-  //             return Expanded(
-  //               child: Container(
-  //                 padding: EdgeInsets.all(12),
-  //                 margin: EdgeInsets.symmetric(horizontal: 4),
-  //                 decoration: BoxDecoration(
-  //                   color: Color(0xFFF5F5F5),
-  //                   borderRadius: BorderRadius.circular(12),
-  //                   border: Border.all(color: Color(0xFFE0E0E0)),
-  //                 ),
-  //                 child: Column(
-  //                   children: [
-  //                     Text(
-  //                       entry.key,
-  //                       style: TextStyle(
-  //                         fontSize: 14,
-  //                         color: Colors.black54,
-  //                       ),
-  //                     ),
-  //                     SizedBox(height: 8),
-  //                     Text(
-  //                       '${entry.value.toStringAsFixed(2)}',
-  //                       style: TextStyle(
-  //                         fontSize: 16,
-  //                         fontWeight: FontWeight.bold,
-  //                         color: Color(0xFF4CAF50),
-  //                       ),
-  //                     ),
-  //                   ],
-  //                 ),
-  //               ),
-  //             );
-  //           }).toList(),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  Widget _buildGoldPriceSection(Map<String, double> prices) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFFFFBF0), Color(0xFFFFF8E1)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.amber.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: Colors.amber.withOpacity(0.2), width: 1),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildPriceCards(prices),
-            const SizedBox(height: 16),
-            _buildLastUpdated(),
-          ],
-        ),
-      ),
+      // bottomNavigationBar: _buildBottomNav(),
     );
   }
 
   Widget _buildHeader() {
     return Row(
       children: [
-        Container(
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [
-                Color.fromARGB(255, 251, 251, 251),
-                Color.fromARGB(255, 255, 255, 255),
+        Image.asset(
+          'assets/images/app icon1.png',
+          width: 132,
+          fit: BoxFit.contain,
+        ),
+        const Spacer(),
+        // _roundIcon(
+        //   Icons.notifications_none_rounded,
+        //   onTap: () {},
+        //   showDot: true,
+        // ),
+        const SizedBox(width: 10),
+        InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const ProfileScreen()),
+          ),
+          child: const CircleAvatar(
+            radius: 24,
+            backgroundColor: Color(0xFFF1E7DA),
+            child: Image(image: AssetImage("assets/images/face1.png")),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHero() {
+    return Container(
+      height: 146,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        color: _cream,
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Image.asset(
+              'assets/images/bracelet.jpg',
+              fit: BoxFit.cover,
+              alignment: Alignment.centerRight,
+            ),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                  colors: [
+                    Colors.white,
+                    Colors.white.withValues(alpha: .92),
+                    Colors.white.withValues(alpha: .35),
+                  ],
+                  stops: const [.0, .44, 1],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            left: 10,
+            top: 18,
+            bottom: 12,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Welcome back,',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  _displayName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 34,
+                    height: 1.02,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'serif',
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Row(
+                  children: [
+                    Text(
+                      'Your gold journey continues',
+                      style: TextStyle(
+                        color: _ink,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(width: 6),
+                    Icon(Icons.star, color: _gold, size: 15),
+                  ],
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withOpacity(0.3),
-                blurRadius: 8,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
-          child: const Center(
-            child: Image(
-              image: AssetImage("assets/images/app_icon.png"),
-              width: 40,
-              fit: BoxFit.cover,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceCard() {
+    return _surface(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'Total Gold Balance',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _ink,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.visibility_outlined, color: _gold, size: 18),
+                  ],
+                ),
+                SizedBox(height: 6),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '2.352',
+                      style: TextStyle(
+                        color: _gold,
+                        fontSize: 32,
+                        height: 1,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: 5),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 2),
+                      child: Text(
+                        'g',
+                        style: TextStyle(
+                          color: _gold,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 7),
+                Text(
+                  'Gold in your scheme',
+                  style: TextStyle(color: _muted, fontSize: 12),
+                ),
+              ],
             ),
           ),
-          // Icon(
-          //   Icons.diamond_outlined,
-          //   color: Colors.white,
-          //   size: 24,
-          // ),
+          Container(width: 1, height: 62, color: _line),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Invested Value',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _ink,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  _money.format(21405),
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 7),
+                const Text(
+                  'Total invested amount',
+                  style: TextStyle(color: _muted, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          _goldButton(
+            label: 'Invest Now',
+            icon: Icons.arrow_forward_rounded,
+            onTap: _openPayment,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return Row(
+      children: [
+        Expanded(
+          child: _actionTile(
+            title: 'Pay Now',
+            subtitle: 'Make quick payments',
+            icon: Icons.payments_outlined,
+            filled: true,
+            onTap: _openPayment,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: Column(
+          child: _actionTile(
+            title: 'View Transactions',
+            subtitle: 'Check your history',
+            icon: Icons.receipt_long_outlined,
+            onTap: _openTransactions,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoldRateSection() {
+    return _surface(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      child: Column(
+        children: [
+          const Row(
+            children: [
+              Text(
+                "Today's Gold Rate",
+                style: TextStyle(
+                  color: _ink,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              SizedBox(width: 10),
+              Icon(Icons.circle, color: Color(0xFF34B56A), size: 9),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Live market prices',
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: _muted, fontSize: 12),
+                ),
+              ),
+              _LivePill(),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              _rateCard(
+                icon: FontAwesomeIcons.cubes,
+                title: '22 Karat',
+                subtitle: '1 Gram',
+                value: goldPrices['1g'] ?? 0,
+                change: '0.45%',
+                up: true,
+              ),
+              const SizedBox(width: 10),
+              _rateCard(
+                icon: FontAwesomeIcons.ring,
+                title: '22 Karat',
+                subtitle: '8 Gram',
+                value: goldPrices['8g'] ?? 0,
+                change: '0.45%',
+                up: true,
+                popular: true,
+              ),
+              const SizedBox(width: 10),
+              _rateCard(
+                icon: Icons.star_rounded,
+                title: '18 Karat',
+                subtitle: '1 Gram',
+                value: goldPrices['18K'] ?? 0,
+                change: '0.20%',
+                up: false,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.access_time_rounded, size: 14, color: _muted),
+              const SizedBox(width: 5),
+              Text(
+                'Last updated: ${_updatedAtLabel()}',
+                style: const TextStyle(color: _muted, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSchemeProgress() {
+    return _surface(
+      padding: const EdgeInsets.all(14),
+      child: Row(
+        children: [
+          const SizedBox(
+            width: 58,
+            height: 58,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(
+                  value: .58,
+                  strokeWidth: 7,
+                  backgroundColor: Color(0xFFEFE8DE),
+                  valueColor: AlwaysStoppedAnimation<Color>(_gold),
+                ),
+                Text(
+                  '58%',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your Scheme Progress',
+                  style: TextStyle(
+                    color: _ink,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                const Text(
+                  '7 of 12 months paid',
+                  style: TextStyle(color: _muted, fontSize: 12),
+                ),
+                const SizedBox(height: 11),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: const LinearProgressIndicator(
+                    value: .58,
+                    minHeight: 7,
+                    backgroundColor: Color(0xFFEFE8DE),
+                    valueColor: AlwaysStoppedAnimation<Color>(_gold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 14),
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [
-                    Color(0xFFedc860),
-                    Color(0xFFd89f32),
-                    Color(0xFFe1b753),
-                  ],
-                ).createShader(bounds),
-                child: const Text(
-                  "Today's Gold Rate",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white, // must
-                  ),
-                ),
+              const Text(
+                'Next due date',
+                style: TextStyle(color: _muted, fontSize: 11),
               ),
-
-              ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [
-                    Color(0xFFedc860),
-                    Color(0xFFd89f32),
-                    Color(0xFFe1b753),
-                  ],
-                ).createShader(bounds),
-                child: const Text(
-                  'Live market prices',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.white, // must
-                  ),
+              const SizedBox(height: 5),
+              Text(
+                _nextDueDate(),
+                style: const TextStyle(
+                  color: _deepGold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-        ),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: const Color(0xFF460218),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [
-                    Color(0xFFedc860),
-                    Color(0xFFd89f32),
-                    Color(0xFFe1b753),
-                  ],
-                ).createShader(bounds),
-                child: const Icon(
-                  Icons.trending_up,
-                  color: Colors.white, // must
-                  size: 14,
-                ),
-              ),
-
-              const SizedBox(width: 4),
-
-              ShaderMask(
-                shaderCallback: (bounds) => LinearGradient(
-                  colors: [
-                    Color(0xFFedc860),
-                    Color(0xFFd89f32),
-                    Color(0xFFe1b753),
-                  ],
-                ).createShader(bounds),
-                child: const Text(
-                  'LIVE',
-                  style: TextStyle(
-                    color: Colors.white, // must
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildPriceCards(Map<String, double> prices) {
-    return Row(
-      children: prices.entries.map((entry) {
-        return Expanded(
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 6),
-            padding: const EdgeInsets.all(16),
+          const SizedBox(width: 8),
+          Container(
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: Colors.amber.withOpacity(0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              color: const Color(0xFFF6EFE7),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Column(
-              children: [
-                _buildGoldTypeIcon(entry.key),
-                const SizedBox(height: 8),
-                Text(
-                  _getGoldLabel(entry.key),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF757575),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _getGoldTypeLabel(entry.key),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF757575),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '₹${entry.value.toStringAsFixed(0)}',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D2D2D),
-                  ),
-                ),
-                // const SizedBox(height: 4),
-                // Container(
-                //   padding:
-                //       const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                //   decoration: BoxDecoration(
-                //     color: const Color(0xFF4CAF50).withOpacity(0.1),
-                //     borderRadius: BorderRadius.circular(8),
-                //   ),
-                //   child: const Text(
-                //     '+0.5%',
-                //     style: TextStyle(
-                //       fontSize: 11,
-                //       color: Color(0xFF4CAF50),
-                //       fontWeight: FontWeight.w600,
-                //     ),
-                //   ),
-                // ),
-              ],
-            ),
+            child: const Icon(Icons.calendar_month_outlined, color: _gold),
           ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildGoldTypeIcon(String type) {
-    IconData icon;
-    Color color;
-
-    switch (type.toLowerCase()) {
-      case '1g':
-        icon = Icons.grain;
-        color = const Color(0xFFFFD700);
-        break;
-      case '8g':
-        icon = Icons.radio_button_checked;
-        color = const Color(0xFFFFA000);
-        break;
-      case '18k':
-        icon = Icons.star;
-        color = const Color(0xFFFF8F00);
-        break;
-      default:
-        icon = Icons.monetization_on;
-        color = const Color(0xFFFFD700);
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(10),
+        ],
       ),
-      child: Icon(icon, color: color, size: 20),
     );
   }
 
-  String _getGoldTypeLabel(String type) {
-    switch (type.toLowerCase()) {
-      case '1g':
-        return '1 Gram';
-      case '8g':
-        return '8 Gram';
-      case '18k':
-        return '1 Gram';
-      default:
-        return type;
-    }
-  }
-
-  String _getGoldLabel(String type) {
-    switch (type.toLowerCase()) {
-      case '1g':
-        return '22 Karat';
-      case '8g':
-        return '22 Karat';
-      case '18k':
-        return '18 Karat';
-      default:
-        return type;
-    }
-  }
-
-  Widget _buildLastUpdated() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-        const SizedBox(width: 4),
-        Text(
-          'Last updated: ${_getCurrentTime()}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-        ),
-      ],
-    );
-  }
-
-  String _getCurrentTime() {
-    final now = DateTime.now();
-    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-  }
-
-  Widget _buildCategoriesSection(List categories) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+  Widget _buildCategoriesSection() {
+    final shown = categories.isEmpty ? _fallbackCategories : categories;
+    return _surface(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          _sectionTitle(
             'Categories',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CategoryScreen()),
+            ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 10),
           SizedBox(
-            height: 100,
-            child: ListView.builder(
+            height: 104,
+            child: ListView.separated(
               scrollDirection: Axis.horizontal,
-              itemCount: categories.length,
+              physics: const BouncingScrollPhysics(),
+              itemCount: shown.length > 8 ? 8 : shown.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
               itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SwapableProductView(
-                          category: (categories[index]['category']),
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    width: 80,
-                    margin: const EdgeInsets.only(right: 16),
-                    child: Column(
-                      children: [
-                        Container(
-                          height: 60,
-                          width: 60,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEEF7EE),
-                            shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFE0E0E0)),
-                            image: DecorationImage(
-                              image: NetworkImage(categories[index]["image"]),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          categories[index]['name'],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
+                final item = shown[index];
+                return _categoryCard(item);
               },
             ),
           ),
@@ -776,356 +681,766 @@ Kindly share the details. Thank you!
     );
   }
 
-  Widget _buildQuickLinksSection(List<Map<String, dynamic>> links) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+  Widget _buildProductsSection() {
+    final shown = products.isEmpty ? _fallbackProducts : products;
+    return _surface(
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Quick Access',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 2.5,
+          _sectionTitle(
+            'Featured Products',
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const CategoryScreen()),
             ),
-            itemCount: links.length,
-            itemBuilder: (context, index) {
-              return InkWell(
-                onTap: () {
-                  if (_userName != "") {
-                    if (links[index]['name'] == "Pay Now") {
-                      final snackBar = SnackBar(
-                        content: const Text("Currently not available...!"),
-                      );
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 150,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              itemCount: shown.length > 8 ? 8 : shown.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) => _productCard(shown[index]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-                      // ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                      // Navigator.push(
-                      //     context,
-                      //     MaterialPageRoute(
-                      //         builder: (context) => const MakePayment()));
-                    } else {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const TransactionScreen(),
-                        ),
-                      );
-                    }
-                  } else {
-                    const snackBar = SnackBar(
-                      content: Text("Your not loggin...! Please Login"),
-                    );
-
-                    ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
+  Widget _buildStoreSection() {
+    final store = stores.isNotEmpty ? stores.first : null;
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const AboutUsPage()),
+      ),
+      child: _surface(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF5DE),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.storefront_outlined, color: _gold),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Our Stores',
+                    style: TextStyle(
+                      color: _ink,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
                   ),
-                  child: Row(
+                  Text(
+                    store?['jewelleryName'] ?? 'Ras Gold & Diamonds',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: _ink,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Row(
                     children: [
-                      Container(
-                        height: 40,
-                        width: 40,
-                        decoration: BoxDecoration(
-                          color: links[index]['color'].withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          links[index]['icon'],
-                          color: links[index]['color'],
-                          size: 20,
-                        ),
+                      const Text(
+                        '3+ Branches Near You',
+                        style: TextStyle(color: _muted, fontSize: 11),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.location_on_outlined,
+                          size: 13, color: _gold),
+                      const SizedBox(width: 3),
                       Expanded(
                         child: Text(
-                          links[index]['name'],
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                          ),
+                          store?['address'] ?? 'Kozhikode, Kerala',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: _muted, fontSize: 11),
                         ),
                       ),
                     ],
                   ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStoreLocationsSection(List stores) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Our Stores',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: stores.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const AboutUsPage(),
-                    ),
-                  );
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        height: 50,
-                        width: 50,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF7EE),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.store,
-                          color: Color(0xFF4CAF50),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              stores[index]['jewelleryName'],
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              stores[index]['address'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEEF7EE),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(
-                              Icons.shop,
-                              color: Color(0xFFFFB74D),
-                              size: 16,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductsSection(List products) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Featured Products',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ],
               ),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CategoryScreen(),
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'View Store',
+              style: TextStyle(
+                color: _deepGold,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded, color: _ink),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomNav() {
+    final items = [
+      (Icons.home_rounded, 'Home'),
+      (Icons.receipt_long_outlined, 'My Schemes'),
+      (Icons.shopping_bag_outlined, 'Gold Purchase'),
+      (Icons.local_offer_outlined, 'Offers'),
+      (Icons.person_outline_rounded, 'Profile'),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(10, 9, 10, 11),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .08),
+            blurRadius: 22,
+            offset: const Offset(0, -6),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: List.generate(items.length, (index) {
+            final selected = index == 0;
+            return Expanded(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: () => _handleNavTap(index),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 3),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        items[index].$1,
+                        color: selected ? _gold : const Color(0xFF5E5E5E),
+                        size: 23,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        items[index].$2,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: selected ? _gold : const Color(0xFF5E5E5E),
+                          fontSize: 10,
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+
+  Widget _surface({required Widget child, EdgeInsetsGeometry? padding}) {
+    return Container(
+      width: double.infinity,
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: .055),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: child,
+    );
+  }
+
+  Widget _roundIcon(
+    IconData icon, {
+    required VoidCallback onTap,
+    bool showDot = false,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(24),
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: _ink),
+          ),
+          if (showDot)
+            Positioned(
+              right: 8,
+              top: 8,
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _goldButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        height: 46,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFFD6AB47), Color(0xFFBF8F28)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Icon(icon, color: Colors.white, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _actionTile({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+    bool filled = false,
+  }) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: onTap,
+      child: Container(
+        height: 78,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: filled ? null : Colors.white,
+          gradient: filled
+              ? const LinearGradient(
+                  colors: [Color(0xFFDBB458), Color(0xFFB98827)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          borderRadius: BorderRadius.circular(8),
+          border: filled ? null : Border.all(color: _line),
+          boxShadow: filled
+              ? [
+                  BoxShadow(
+                    color: _gold.withValues(alpha: .22),
+                    blurRadius: 12,
+                    offset: const Offset(0, 8),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: filled ? Colors.white : _gold, size: 32),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: filled ? Colors.white : _ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
                     ),
-                  );
-                },
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: filled ? Colors.white : _muted,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: filled ? Colors.white : _ink,
+              size: 28,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _rateCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required double value,
+    required String change,
+    required bool up,
+    bool popular = false,
+  }) {
+    return Expanded(
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Container(
+            constraints: const BoxConstraints(minHeight: 166),
+            padding: const EdgeInsets.fromLTRB(8, 16, 8, 10),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: popular ? _gold : _line),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: _gold, size: 24),
+                const SizedBox(height: 12),
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: _ink,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: const TextStyle(color: _muted, fontSize: 12),
+                ),
+                const SizedBox(height: 8),
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(
+                    _money.format(value),
+                    style: const TextStyle(
+                      color: _ink,
+                      fontSize: 21,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      up
+                          ? Icons.arrow_upward_rounded
+                          : Icons.arrow_downward_rounded,
+                      color: up ? const Color(0xFF34A853) : Colors.red,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      change,
+                      style: TextStyle(
+                        color: up ? const Color(0xFF34A853) : Colors.red,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (popular)
+            Positioned(
+              right: 0,
+              top: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: const BoxDecoration(
+                  color: _gold,
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(8),
+                    bottomLeft: Radius.circular(8),
+                  ),
+                ),
                 child: const Text(
+                  'POPULAR',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String title, {required VoidCallback onTap}) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: _ink,
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const Spacer(),
+        InkWell(
+          borderRadius: BorderRadius.circular(6),
+          onTap: onTap,
+          child: const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 2, vertical: 3),
+            child: Row(
+              children: [
+                Text(
                   'View All',
                   style: TextStyle(
-                    color: Color(0xFF4CAF50),
+                    color: _deepGold,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.7,
+                SizedBox(width: 4),
+                Icon(Icons.chevron_right_rounded, color: _ink, size: 22),
+              ],
             ),
-            itemCount: products.length > 4 ? 4 : products.length,
-            itemBuilder: (context, index) {
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => SwapableProductView(
-                        category: products[index]['category'],
-                      ),
-                    ),
-                  );
-                },
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Use placeholder instead of real image since we don't have assets
-                      Container(
-                        height: 120,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF5F5F5),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            topRight: Radius.circular(12),
-                          ),
-                        ),
-                        child: Center(
-                          child: products[index]['photo'] != ""
-                              ? Image(
-                                  image: NetworkImage(products[index]['photo']),
-                                )
-                              : Icon(
-                                  FontAwesomeIcons.gem,
-                                  size: 40,
-                                  color: const Color(
-                                    0xFF4CAF50,
-                                  ).withOpacity(0.7),
-                                ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              products[index]['productName'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star,
-                                  color: Color(0xFFFFB74D),
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${products[index]['productCode']}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.black54,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '${products[index]['gram']}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF4CAF50),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _categoryCard(dynamic item) {
+    final String name = '${item['name'] ?? item['category'] ?? 'Category'}';
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SwapableProductView(
+            category: '${item['category'] ?? name}',
+          ),
+        ),
+      ),
+      child: Container(
+        width: 116,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _line),
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(8, 7, 8, 0),
+                child: _dataImage(
+                  item,
+                  height: 68,
+                  fit: BoxFit.contain,
                 ),
-              );
-            },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(6, 0, 6, 8),
+              child: Text(
+                name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _ink,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _productCard(dynamic item) {
+    final String name = '${item['productName'] ?? 'Gold Product'}';
+    final String category = '${item['category'] ?? name}';
+    return InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SwapableProductView(category: category),
+        ),
+      ),
+      child: Container(
+        width: 136,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: _line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                SizedBox(
+                  height: 76,
+                  width: double.infinity,
+                  child: _dataImage(item, height: 76, fit: BoxFit.contain),
+                  // ),
+                  // const Positioned(
+                  //   right: 0,
+                  //   top: 0,
+                  //   child: Icon(Icons.favorite_border, color: _gold, size: 20),
+                ),
+              ],
+            ),
+            const Spacer(),
+            Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: _ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              '${item['productCode'] ?? '22K'}',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(color: _ink, fontSize: 11),
+            ),
+            const SizedBox(height: 2),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                _productPrice(item),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: _deepGold,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _dataImage(dynamic item, {required double height, BoxFit? fit}) {
+    final String? url = item['image'] ?? item['photo'];
+    final String? asset = item['asset'];
+    if (url != null && url.isNotEmpty) {
+      return Image.network(
+        url,
+        height: height,
+        fit: fit ?? BoxFit.cover,
+        errorBuilder: (_, __, ___) => _imageFallback(height),
+      );
+    }
+    if (asset != null && asset.isNotEmpty) {
+      return Image.asset(
+        asset,
+        height: height,
+        fit: fit ?? BoxFit.cover,
+        errorBuilder: (_, __, ___) => _imageFallback(height),
+      );
+    }
+    return _imageFallback(height);
+  }
+
+  Widget _imageFallback(double height) {
+    return SizedBox(
+      height: height,
+      child: const Center(
+        child: Icon(FontAwesomeIcons.gem, color: _gold, size: 28),
+      ),
+    );
+  }
+
+  void _openPayment() {
+    // if (_userName.isNotEmpty) {
+    //   Navigator.push(
+    //     context,
+    //     MaterialPageRoute(builder: (context) => const MakePayment()),
+    //   );
+    //   return;
+    // }
+    // ScaffoldMessenger.of(context).showSnackBar(
+    //   const SnackBar(content: Text("Please login to make a payment")),
+    // );
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Under development")),
+    );
+  }
+
+  void _openTransactions() {
+    if (_userName.isNotEmpty) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const TransactionScreen()),
+      );
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please login to view transactions")),
+    );
+  }
+
+  void _handleNavTap(int index) {
+    if (index == 0) return;
+    if (index == 1) {
+      _openTransactions();
+    } else if (index == 2) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CategoryScreen()),
+      );
+    } else if (index == 3) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const CategoryScreen()),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ProfileScreen()),
+      );
+    }
+  }
+
+  String _productPrice(dynamic item) {
+    final dynamic gram = item['gram'];
+    if (gram == null) return 'View';
+    final text = '$gram';
+    if (text.contains('₹')) return text;
+    final number = double.tryParse(text);
+    if (number == null) return text;
+    return '${number.toStringAsFixed(number.truncateToDouble() == number ? 0 : 2)}g';
+  }
+
+  String _updatedAtLabel() {
+    if (goldrateList.isNotEmpty) {
+      final time = '${goldrateList[0]['updateTime'] ?? ''}'.trim();
+      if (time.isNotEmpty) return time;
+    }
+    final now = DateTime.now();
+    return '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+  }
+
+  String _nextDueDate() {
+    final nextMonth =
+        DateTime(DateTime.now().year, DateTime.now().month + 1, 5);
+    return DateFormat('dd MMM yyyy').format(nextMonth);
+  }
+
+  String get _displayName {
+    if (_userName.trim().isEmpty) return 'Guest';
+    return _userName.trim().split(' ').first;
+  }
+
+  double _toDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse('$value') ?? 0;
+  }
+}
+
+class _LivePill extends StatelessWidget {
+  const _LivePill();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF8EF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.circle, color: Color(0xFF34B56A), size: 7),
+          SizedBox(width: 4),
+          Text(
+            'LIVE',
+            style: TextStyle(
+              color: Color(0xFF22964C),
+              fontSize: 10,
+              fontWeight: FontWeight.w800,
+            ),
           ),
         ],
       ),

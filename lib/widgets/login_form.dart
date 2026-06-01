@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../Providers/user.dart';
 import '../functions/getDeviceId.dart';
 import '../screens/newHomeScreen.dart';
 
@@ -17,43 +16,23 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
-  User? db;
-
-  // List userList = [];
-  // List filterList = [];
-
-  var index;
-
-  // initialise() {
-  //   db = User();
-  //   db?.initiliase();
-  //   db?.read().then((value) {
-  //     setState(() {
-  //       userList = value!;
-  //     });
-  //     print(userList);
-  //   });
-  // }
+  static const Color _gold = Color(0xFFC89A32);
+  static const Color _deepGold = Color(0xFF9F741E);
+  static const Color _ink = Color(0xFF171717);
+  static const Color _muted = Color(0xFF6E6559);
+  static const Color _line = Color(0xFFEAE2D3);
 
   @override
   void initState() {
     super.initState();
-    // initialise();
   }
 
   final TextEditingController _customerIdController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
   final _form = GlobalKey<FormState>();
-  TextStyle style = const TextStyle(
-    fontFamily: 'latto',
-    fontSize: 20.0,
-    color: Colors.white,
-  );
 
   Future<bool> login() async {
-    SharedPreferences sharedPreferences = await SharedPreferences.getInstance();
-
     String custId = _customerIdController.text.trim();
     String password = _passwordController.text.trim();
 
@@ -65,8 +44,6 @@ class _LoginFormState extends State<LoginForm> {
     }
 
     try {
-      // 🔹 Query only this user
-      print("custId: $custId, password: $password");
       QuerySnapshot snapshot = await FirebaseFirestore.instance
           .collection('user')
           .where('custId', isEqualTo: custId)
@@ -85,10 +62,8 @@ class _LoginFormState extends State<LoginForm> {
 
       var userDoc = snapshot.docs.first;
       var userData = userDoc.data() as Map<String, dynamic>;
-      // ✅ Manually inject the document ID so it's globally available
       userData['id'] = userDoc.id;
 
-      // 🔐 Password check
       if (userData['phone_no'] != password) {
         if (!mounted) return false;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -97,7 +72,6 @@ class _LoginFormState extends State<LoginForm> {
         return false;
       }
 
-      // 🔹 Device ID
       String currentDeviceId = await getDeviceId();
 
       if (!mounted) return false;
@@ -106,7 +80,6 @@ class _LoginFormState extends State<LoginForm> {
 
       String? savedDeviceId = userData['deviceId'];
 
-      // ✅ First time login
       if (savedDeviceId == null || savedDeviceId.isEmpty) {
         await userDoc.reference.set({
           'deviceId': currentDeviceId,
@@ -114,9 +87,7 @@ class _LoginFormState extends State<LoginForm> {
         }, SetOptions(merge: true));
 
         if (!mounted) return false;
-      }
-      // ❌ Already logged in another device
-      else if (savedDeviceId != currentDeviceId) {
+      } else if (savedDeviceId != currentDeviceId) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
               content: Text("Account already logged in on another device")),
@@ -124,7 +95,11 @@ class _LoginFormState extends State<LoginForm> {
         return false;
       }
 
-      // ✅ Save session locally
+      SharedPreferences sharedPreferences =
+          await SharedPreferences.getInstance();
+
+      if (!mounted) return false;
+
       sharedPreferences.setString(
           "user",
           json.encode(userData, toEncodable: (item) {
@@ -149,104 +124,117 @@ class _LoginFormState extends State<LoginForm> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Form(
-        key: _form,
-        child: Container(
-          padding: const EdgeInsets.only(left: 25, right: 25),
-          child: Column(children: <Widget>[
-            TextFormField(
-              controller: _customerIdController,
-              textAlign: TextAlign.left,
-              // controller: _emailController,
-              validator: (value) {
-                if (value!.isEmpty) {
-                  return 'Please provide Valid customer id.';
-                }
-                return null;
-              },
-              obscureText: false,
-              style: const TextStyle(
-                  color: Color.fromARGB(255, 73, 73, 73), fontSize: 18),
-              decoration: InputDecoration(
-                hintText: "Customer Id",
-                hintStyle:
-                    const TextStyle(color: Color.fromARGB(255, 61, 61, 61)),
-                enabledBorder: const UnderlineInputBorder(
-                  borderSide:
-                      BorderSide(color: Color.fromARGB(255, 52, 52, 52)),
+    return Form(
+      key: _form,
+      child: Column(
+        children: <Widget>[
+          _field(
+            controller: _customerIdController,
+            label: "Customer Id",
+            icon: Icons.badge_outlined,
+            validatorText: 'Please provide valid customer id.',
+          ),
+          const SizedBox(height: 14),
+          _field(
+            controller: _passwordController,
+            label: "Password",
+            icon: Icons.lock_outline_rounded,
+            validatorText: 'Please provide a value.',
+          ),
+          const SizedBox(height: 22),
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () {
+              if (_form.currentState?.validate() ?? false) {
+                login();
+              }
+            },
+            child: Container(
+              height: 54,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFDBB458), Color(0xFFB98827)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary),
-                ),
+                borderRadius: BorderRadius.circular(8),
+                boxShadow: [
+                  BoxShadow(
+                    color: _gold.withValues(alpha: .24),
+                    blurRadius: 16,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    "Login",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 20),
+                ],
               ),
             ),
-            const SizedBox(
-              height: 20,
-            ),
-            TextFormField(
-              controller: _passwordController,
-              textAlign: TextAlign.left,
-              // controller: _emailController,
-              validator: (value) {
-                if (value!.isEmpty) {
-                  return 'Please provide a value.';
-                }
-                return null;
-              },
-              obscureText: false,
-              style: const TextStyle(
-                  color: Color.fromARGB(255, 47, 47, 47), fontSize: 18),
-              decoration: InputDecoration(
-                hintText: "Password",
-                hintStyle:
-                    const TextStyle(color: Color.fromARGB(255, 61, 61, 61)),
-                enabledBorder: const UnderlineInputBorder(
-                  borderSide:
-                      BorderSide(color: Color.fromARGB(255, 52, 52, 52)),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.secondary),
-                ),
-              ),
-            ),
-            const SizedBox(
-              height: 40,
-            ),
-            Material(
-  elevation: 1.0,
-  borderRadius: BorderRadius.circular(12.0),
-  color: const Color(0xFF460218), // 🔥 button bg color
-  child: MaterialButton(
-    minWidth: MediaQuery.of(context).size.width,
-    padding: const EdgeInsets.fromLTRB(20.0, 15.0, 20.0, 15.0),
-    onPressed: () {
-      login();
-    },
-    child: ShaderMask(
-      shaderCallback: (bounds) => LinearGradient(
-        colors: [
-          Color(0xFFedc860),
-          Color(0xFFd89f32),
-          Color(0xFFe1b753),
+          ),
         ],
-      ).createShader(bounds),
-      child: Text(
-        "Login",
-        textAlign: TextAlign.center,
-        style: style.copyWith(
-          color: Colors.white, // must
-          fontWeight: FontWeight.bold,
-        ),
       ),
-    ),
-  ),
+    );
+  }
 
-            ),
-          ]),
+  Widget _field({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String validatorText,
+  }) {
+    return TextFormField(
+      controller: controller,
+      textAlign: TextAlign.left,
+      validator: (value) {
+        if (value == null || value.trim().isEmpty) {
+          return validatorText;
+        }
+        return null;
+      },
+      obscureText: false,
+      style: const TextStyle(
+        color: _ink,
+        fontSize: 15,
+        fontWeight: FontWeight.w600,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: _muted, fontSize: 13),
+        prefixIcon: Icon(icon, color: _gold, size: 21),
+        filled: true,
+        fillColor: const Color(0xFFFFFCF7),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: _line),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: _deepGold, width: 1.2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.redAccent),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: Colors.redAccent),
         ),
       ),
     );

@@ -198,49 +198,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 241, 230, 230),
       appBar: AppBar(
-  backgroundColor: const Color(0xFF460218),
-  elevation: 2,
-  centerTitle: true,
+        backgroundColor: const Color(0xFF460218),
+        elevation: 2,
+        centerTitle: true,
 
-  // base icon color (must be white for gradient)
-  iconTheme: const IconThemeData(color: Colors.white),
+        // base icon color (must be white for gradient)
+        iconTheme: const IconThemeData(color: Colors.white),
 
-  // 🔥 Title gradient
-  title: ShaderMask(
-    shaderCallback: (bounds) => LinearGradient(
-      colors: [
-        Color(0xFFedc860),
-        Color(0xFFd89f32),
-        Color(0xFFe1b753),
-      ],
-    ).createShader(bounds),
-    child: const Text(
-      "Profile",
-      style: TextStyle(
-        color: Colors.white, // must
-        fontWeight: FontWeight.bold,
-        fontSize: 16,
+        // 🔥 Title gradient
+        title: ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [
+              Color(0xFFedc860),
+              Color(0xFFd89f32),
+              Color(0xFFe1b753),
+            ],
+          ).createShader(bounds),
+          child: const Text(
+            "Profile",
+            style: TextStyle(
+              color: Colors.white, // must
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+            ),
+          ),
+        ),
+
+        // 🔥 Back icon gradient
+        leading: ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [
+              Color(0xFFedc860),
+              Color(0xFFd89f32),
+              Color(0xFFe1b753),
+            ],
+          ).createShader(bounds),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+        ),
       ),
-    ),
-  ),
-
-  // 🔥 Back icon gradient
-  leading: ShaderMask(
-    shaderCallback: (bounds) => LinearGradient(
-      colors: [
-        Color(0xFFedc860),
-        Color(0xFFd89f32),
-        Color(0xFFe1b753),
-      ],
-    ).createShader(bounds),
-    child: IconButton(
-      icon: const Icon(Icons.arrow_back, color: Colors.white),
-      onPressed: () {
-        Navigator.pop(context);
-      },
-    ),
-  ),
-),
       body: SizedBox(
         width: double.infinity,
         height: sizeH,
@@ -399,7 +399,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => submittedRec(
+                              builder: (context) => SubmittedRec(
                                     userId: user["id"],
                                   )));
                     },
@@ -523,84 +523,322 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   bool isProfile = false;
+  // Widget profileSec() {
+  //   final sizeH = MediaQuery.of(context).size.height;
+  //   return Scaffold(
+  //     backgroundColor: const Color.fromARGB(255, 241, 230, 230),
+  //     appBar: AppBar(
+  //       leading: IconButton(
+  //         onPressed: () {
+  //           setState(() {
+  //             isProfile = false;
+  //           });
+  //         },
+  //         icon: const Icon(
+  //           Icons.arrow_back,
+  //           color: Colors.white,
+  //         ),
+  //       ),
+  //       elevation: 2,
+  //       backgroundColor: Theme.of(context).primaryColor,
+  //       centerTitle: true,
+  //       title: const Text(
+  //         "My Profile",
+  //         style: TextStyle(
+  //             color: Colors.white,
+  //             fontSize: 14,
+  //             fontFamily: 'latto',
+  //             fontWeight: FontWeight.bold),
+  //       ),
+  //       iconTheme: const IconThemeData(color: Colors.white),
+  //     ),
+  //     body: Container(
+  //       child: Column(
+  //         children: [
+  //           Container(
+  //             height: sizeH * .02,
+  //           ),
+  //           Container(
+  //             height: sizeH * .2,
+  //             width: double.infinity,
+  //             color: const Color.fromARGB(255, 255, 255, 255),
+  //             child: const Column(
+  //               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //               children: [
+  //                 CircleAvatar(
+  //                   radius: 60,
+  //                   backgroundColor: Color.fromARGB(255, 241, 230, 230),
+  //                   backgroundImage: AssetImage("assets/images/face1.png"),
+  //                 ),
+  //               ],
+  //             ),
+  //           ),
+  //           ProfileNameTag(
+  //             size: sizeH * .09,
+  //             icon: FontAwesomeIcons.user,
+  //             label: "Name",
+  //             name: user[0]["name"],
+  //           ),
+  //           Container(
+  //             height: .2,
+  //             width: double.infinity,
+  //             color: Colors.grey,
+  //           ),
+  //           // ProfileNameTag(
+  //           //     size: sizeH * .09,
+  //           //     icon: Icons.mail_rounded,
+  //           //     label: "Email",
+  //           //     name: user["mail"]),
+  //           Container(
+  //             height: .2,
+  //             width: double.infinity,
+  //             color: Colors.grey,
+  //           ),
+  //           ProfileNameTag(
+  //             size: sizeH * .09,
+  //             icon: Icons.call,
+  //             label: "Phone Number",
+  //             name: user[0]["phoneNo"],
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
   Widget profileSec() {
-    final sizeH = MediaQuery.of(context).size.height;
     return Scaffold(
-      backgroundColor: const Color.fromARGB(255, 241, 230, 230),
+      backgroundColor: const Color(0xFFF8F8F8),
       appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Theme.of(context).primaryColor,
+        centerTitle: true,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: const Text(
+          "My Profile",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
         leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
           onPressed: () {
             setState(() {
               isProfile = false;
             });
           },
-          icon: const Icon(
-            Icons.arrow_back,
-            color: Colors.white,
-          ),
         ),
-        elevation: 2,
-        backgroundColor: Theme.of(context).primaryColor,
-        centerTitle: true,
-        title: const Text(
-          "My Profile",
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontFamily: 'latto',
-              fontWeight: FontWeight.bold),
-        ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Container(
-        child: Column(
-          children: [
-            Container(
-              height: sizeH * .02,
-            ),
-            Container(
-              height: sizeH * .2,
-              width: double.infinity,
-              color: const Color.fromARGB(255, 255, 255, 255),
-              child: const Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Color.fromARGB(255, 241, 230, 230),
-                    backgroundImage: AssetImage("assets/images/face1.png"),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('user')
+            .doc(user['id'])
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>? ?? {};
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                /// Profile Card
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        Stack(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundColor:
+                                  const Color.fromARGB(255, 244, 231, 214),
+                              backgroundImage: userData['profileImage'] !=
+                                          null &&
+                                      userData['profileImage'] != ""
+                                  ? NetworkImage(
+                                      userData['profileImage'],
+                                    )
+                                  : const AssetImage("assets/images/face1.png")
+                                      as ImageProvider,
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: pickFile,
+                                child: Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).primaryColor,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: const Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.white,
+                                    size: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          "${userData['name'] ?? ''}".toUpperCase(),
+                          style: GoogleFonts.roboto(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          "Customer ID : ${userData['custId'] ?? '-'}",
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                /// User Details Card
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(.05),
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      _profileTile(
+                        icon: Icons.person_outline,
+                        title: "Name",
+                        value: userData['name'] ?? '',
+                      ),
+                      const Divider(height: 1),
+                      _profileTile(
+                        icon: Icons.phone_outlined,
+                        title: "Phone Number",
+                        value: userData['phoneNo'] ?? '',
+                      ),
+                      const Divider(height: 1),
+                      _profileTile(
+                        icon: Icons.badge_outlined,
+                        title: "Customer ID",
+                        value: userData['custId'] ?? '',
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                /// Logout Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red.shade600,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (ctx) => AlertDialog(
+                          title: const Text("Logout"),
+                          content: const Text(
+                            "Are you sure you want to logout?",
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text("Cancel"),
+                            ),
+                            ElevatedButton(
+                              onPressed: logout,
+                              child: const Text("Logout"),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.logout),
+                    label: const Text(
+                      "Logout",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-            ProfileNameTag(
-              size: sizeH * .09,
-              icon: FontAwesomeIcons.user,
-              label: "Name",
-              name: user[0]["name"],
-            ),
-            Container(
-              height: .2,
-              width: double.infinity,
-              color: Colors.grey,
-            ),
-            // ProfileNameTag(
-            //     size: sizeH * .09,
-            //     icon: Icons.mail_rounded,
-            //     label: "Email",
-            //     name: user["mail"]),
-            Container(
-              height: .2,
-              width: double.infinity,
-              color: Colors.grey,
-            ),
-            ProfileNameTag(
-              size: sizeH * .09,
-              icon: Icons.call,
-              label: "Phone Number",
-              name: user[0]["phoneNo"],
-            ),
-          ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _profileTile({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: const Color.fromARGB(255, 244, 231, 214),
+        child: Icon(
+          icon,
+          color: Theme.of(context).primaryColor,
+        ),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 12,
+          color: Colors.grey,
+        ),
+      ),
+      subtitle: Text(
+        value,
+        style: const TextStyle(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -679,7 +917,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => submittedRec(
+                              builder: (context) => SubmittedRec(
                                     userId: user["id"],
                                   )));
                     },
