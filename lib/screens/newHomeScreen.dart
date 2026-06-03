@@ -42,12 +42,16 @@ class _HomePageState extends State<HomePage> {
   );
 
   Map<String, double> goldPrices = {'1g': 0.00, '8g': 0.00, '18K': 0.00};
+  // Map<String, double> goldPrices = {};
+  Map<String, double> goldChanges = {};
+  Map<String, bool> goldUp = {};
   List categories = [];
   List stores = [];
   List products = [];
   List banner = [];
   List goldrateList = [];
   Map<String, dynamic> aboutUsData = {};
+  Map<String, dynamic> _userData = {};
   String _userName = "";
 
   final List<Map<String, dynamic>> _fallbackCategories = const [
@@ -115,6 +119,39 @@ class _HomePageState extends State<HomePage> {
     fetchData();
   }
 
+  void getGoldrate() {
+    Provider.of<Goldrate>(context, listen: false).read().then((value) {
+      if (!mounted || value == null || value.isEmpty) return;
+
+      final data = value[0];
+      print(data);
+      final double upValue = _toDouble(data["up"]);
+      final double downValue = _toDouble(data["down"]);
+
+      setState(() {
+        goldrateList = value;
+
+        goldPrices = {
+          '1g': _toDouble(data["gram"]),
+          '8g': _toDouble(data["pavan"]),
+          '18K': _toDouble(data["18gram"]),
+        };
+
+        goldChanges = {
+          '1g': upValue > 0 ? upValue : downValue,
+          '8g': upValue > 0 ? upValue : downValue,
+          '18K': 0,
+        };
+
+        goldUp = {
+          '1g': upValue > 0,
+          '8g': upValue > 0,
+          '18K': false,
+        };
+      });
+    });
+  }
+
   void getSlider() {
     Provider.of<BannerProvider>(context, listen: false).getSlide('Banner').then(
       (onvalue) {
@@ -140,8 +177,10 @@ class _HomePageState extends State<HomePage> {
       if (userData != null) {
         Map<String, dynamic> user = json.decode(userData);
         setState(() {
+          _userData = user;
           _userName = user['name'] ?? '';
         });
+        await _refreshUserData(user);
       }
     } else {
       setState(() {
@@ -150,19 +189,44 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void getGoldrate() {
-    Provider.of<Goldrate>(context, listen: false).read().then((value) {
-      if (!mounted || value == null || value.isEmpty) return;
+  Future<void> _refreshUserData(Map<String, dynamic> savedUser) async {
+    final String userId = '${savedUser['id'] ?? ''}'.trim();
+    if (userId.isEmpty) return;
+
+    try {
+      final doc =
+          await FirebaseFirestore.instance.collection('user').doc(userId).get();
+      if (!mounted || !doc.exists) return;
+
+      final data = doc.data() ?? {};
       setState(() {
-        goldrateList = value;
-        goldPrices = {
-          '1g': _toDouble(goldrateList[0]["gram"]),
-          '8g': _toDouble(goldrateList[0]["pavan"]),
-          '18K': _toDouble(goldrateList[0]["18gram"]),
-        };
+        _userData = {...savedUser, ...data, 'id': doc.id};
+        _userName = '${_userData['name'] ?? ''}';
       });
-    });
+      print("****************************");
+      print(_userData);
+      print("****************************");
+    } catch (e) {
+      debugPrint('Unable to refresh user details: $e');
+    }
   }
+
+  // void getGoldrate() {
+  //   Provider.of<Goldrate>(context, listen: false).read().then((value) {
+  //     if (!mounted || value == null || value.isEmpty) return;
+  //     setState(() {
+  //       goldrateList = value;
+  //       print(goldrateList[0]);
+  //       goldPrices = {
+  //         '1g': _toDouble(goldrateList[0]["gram"]),
+  //         '8g': _toDouble(goldrateList[0]["pavan"]),
+  //         '18K': _toDouble(goldrateList[0]["18gram"]),
+  //         'up': goldrateList[0]["up"],
+  //         'down': goldrateList[0]["down"]
+  //       };
+  //     });
+  //   });
+  // }
 
   void getCategory() {
     Provider.of<Category>(context, listen: false).getCategory().then((onValue) {
@@ -217,8 +281,8 @@ class _HomePageState extends State<HomePage> {
               _buildHeader(),
               const SizedBox(height: 16),
               _buildHero(),
-              // const SizedBox(height: 14),
-              // _buildBalanceCard(),
+              const SizedBox(height: 14),
+              _buildBalanceCard(),
               const SizedBox(height: 14),
               _buildQuickActions(),
               const SizedBox(height: 14),
@@ -242,10 +306,13 @@ class _HomePageState extends State<HomePage> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Image.asset(
-          'assets/images/app icon1.png',
-          width: 132,
-          fit: BoxFit.contain,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.asset(
+            'assets/images/app_icon.png',
+            width: 132,
+            fit: BoxFit.contain,
+          ),
         ),
         const Spacer(),
         // _roundIcon(
@@ -325,7 +392,7 @@ class _HomePageState extends State<HomePage> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     color: _ink,
-                    fontSize: 34,
+                    fontSize: 24,
                     height: 1.02,
                     fontWeight: FontWeight.w700,
                     fontFamily: 'serif',
@@ -355,15 +422,21 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildBalanceCard() {
+    final double balance = _customerBalance;
+    final double fullAmount = _schemeFullAmount;
+    final double totalGold = _toDouble(
+      _userData['totalGram'] ?? _userData['total_gram'],
+    );
+
     return _surface(
       padding: const EdgeInsets.all(18),
       child: Row(
         children: [
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Flexible(
                       child: Text(
@@ -381,21 +454,21 @@ class _HomePageState extends State<HomePage> {
                     Icon(Icons.visibility_outlined, color: _gold, size: 18),
                   ],
                 ),
-                SizedBox(height: 6),
+                const SizedBox(height: 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '2.352',
-                      style: TextStyle(
+                      totalGold.toStringAsFixed(3),
+                      style: const TextStyle(
                         color: _gold,
-                        fontSize: 32,
+                        fontSize: 20,
                         height: 1,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(width: 5),
-                    Padding(
+                    const SizedBox(width: 5),
+                    const Padding(
                       padding: EdgeInsets.only(bottom: 2),
                       child: Text(
                         'g',
@@ -408,8 +481,8 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
-                SizedBox(height: 7),
-                Text(
+                const SizedBox(height: 7),
+                const Text(
                   'Gold in your scheme',
                   style: TextStyle(color: _muted, fontSize: 12),
                 ),
@@ -432,17 +505,19 @@ class _HomePageState extends State<HomePage> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _money.format(21405),
+                  _money.format(balance),
                   style: const TextStyle(
                     color: _ink,
-                    fontSize: 21,
+                    fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 7),
-                const Text(
-                  'Total invested amount',
-                  style: TextStyle(color: _muted, fontSize: 12),
+                Text(
+                  fullAmount > 0
+                      ? 'Target ${_money.format(fullAmount)}'
+                      : 'Total invested amount',
+                  style: const TextStyle(color: _muted, fontSize: 12),
                 ),
               ],
             ),
@@ -512,6 +587,38 @@ class _HomePageState extends State<HomePage> {
             ],
           ),
           const SizedBox(height: 14),
+          // Row(
+          //   children: [
+          //     _rateCard(
+          //       icon: FontAwesomeIcons.cubes,
+          //       title: '22 Karat',
+          //       subtitle: '1 Gram',
+          //       value: goldPrices['1g'] ?? 0,
+          //       change: '0.45%',
+          //       up: true,
+          //     ),
+          //     const SizedBox(width: 10),
+          //     _rateCard(
+          //       icon: FontAwesomeIcons.ring,
+          //       title: '22 Karat',
+          //       subtitle: '8 Gram',
+          //       value: goldPrices['8g'] ?? 0,
+          //       change: '0.45%',
+          //       up: true,
+          //       popular: true,
+          //     ),
+          //     const SizedBox(width: 10),
+          //     _rateCard(
+          //       icon: Icons.star_rounded,
+          //       title: '18 Karat',
+          //       subtitle: '1 Gram',
+          //       value: goldPrices['18K'] ?? 0,
+          //       change: '0.20%',
+          //       up: false,
+          //     ),
+          //   ],
+          // ),
+
           Row(
             children: [
               _rateCard(
@@ -519,8 +626,8 @@ class _HomePageState extends State<HomePage> {
                 title: '22 Karat',
                 subtitle: '1 Gram',
                 value: goldPrices['1g'] ?? 0,
-                change: '0.45%',
-                up: true,
+                change: '${goldChanges['1g'] ?? 0}',
+                up: goldUp['1g'] ?? true,
               ),
               const SizedBox(width: 10),
               _rateCard(
@@ -528,8 +635,8 @@ class _HomePageState extends State<HomePage> {
                 title: '22 Karat',
                 subtitle: '8 Gram',
                 value: goldPrices['8g'] ?? 0,
-                change: '0.45%',
-                up: true,
+                change: '${goldChanges['8g'] ?? 0}',
+                up: goldUp['8g'] ?? true,
                 popular: true,
               ),
               const SizedBox(width: 10),
@@ -538,7 +645,7 @@ class _HomePageState extends State<HomePage> {
                 title: '18 Karat',
                 subtitle: '1 Gram',
                 value: goldPrices['18K'] ?? 0,
-                change: '0.20%',
+                change: '',
                 up: false,
               ),
             ],
@@ -561,25 +668,37 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSchemeProgress() {
+    final double progress = _schemeProgress;
+    final int percent = (progress * 100).round();
+    final int paidMonths = _paidMonths;
+    final double fullAmount = _schemeFullAmount;
+    print("======================");
+    print('progress $progress');
+    print('fullAmount $fullAmount');
+    print('paidMonths $paidMonths');
+    print('percent $percent');
     return _surface(
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
-          const SizedBox(
+          SizedBox(
             width: 58,
             height: 58,
             child: Stack(
               alignment: Alignment.center,
               children: [
                 CircularProgressIndicator(
-                  value: .58,
+                  value: progress,
                   strokeWidth: 7,
-                  backgroundColor: Color(0xFFEFE8DE),
-                  valueColor: AlwaysStoppedAnimation<Color>(_gold),
+                  backgroundColor: const Color(0xFFEFE8DE),
+                  valueColor: const AlwaysStoppedAnimation<Color>(_gold),
                 ),
                 Text(
-                  '58%',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                  '$percent%',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -598,18 +717,20 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 3),
-                const Text(
-                  '7 of 12 months paid',
-                  style: TextStyle(color: _muted, fontSize: 12),
+                Text(
+                  fullAmount > 0
+                      ? '$paidMonths of 12 months paid'
+                      : 'Set monthly limit to track progress',
+                  style: const TextStyle(color: _muted, fontSize: 12),
                 ),
                 const SizedBox(height: 11),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: const LinearProgressIndicator(
-                    value: .58,
+                  child: LinearProgressIndicator(
+                    value: progress,
                     minHeight: 7,
-                    backgroundColor: Color(0xFFEFE8DE),
-                    valueColor: AlwaysStoppedAnimation<Color>(_gold),
+                    backgroundColor: const Color(0xFFEFE8DE),
+                    valueColor: const AlwaysStoppedAnimation<Color>(_gold),
                   ),
                 ),
               ],
@@ -1087,27 +1208,53 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      up
-                          ? Icons.arrow_upward_rounded
-                          : Icons.arrow_downward_rounded,
-                      color: up ? const Color(0xFF34A853) : Colors.red,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      change,
-                      style: TextStyle(
+                // Row(
+                //   mainAxisAlignment: MainAxisAlignment.center,
+                //   children: [
+                //     Icon(
+                //       up
+                //           ? Icons.arrow_upward_rounded
+                //           : Icons.arrow_downward_rounded,
+                //       color: up ? const Color(0xFF34A853) : Colors.red,
+                //       size: 16,
+                //     ),
+                //     const SizedBox(width: 3),
+                //     Text(
+                //       change,
+                //       style: TextStyle(
+                //         color: up ? const Color(0xFF34A853) : Colors.red,
+                //         fontSize: 12,
+                //         fontWeight: FontWeight.w700,
+                //       ),
+                //     ),
+                //   ],
+                // ),
+                // const SizedBox(height: 6),
+
+                if (change.isNotEmpty)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        up
+                            ? Icons.arrow_upward_rounded
+                            : Icons.arrow_downward_rounded,
                         color: up ? const Color(0xFF34A853) : Colors.red,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
+                        size: 16,
                       ),
-                    ),
-                  ],
-                ),
+                      const SizedBox(width: 3),
+                      Text(
+                        change,
+                        style: TextStyle(
+                          color: up ? const Color(0xFF34A853) : Colors.red,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  const SizedBox(height: 16),
               ],
             ),
           ),
@@ -1342,7 +1489,11 @@ class _HomePageState extends State<HomePage> {
     // ScaffoldMessenger.of(context).showSnackBar(
     //   const SnackBar(content: Text("Please login to make a payment")),
     // );
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+
+    // Navigator.pop(context);
+
+    messenger.showSnackBar(
       const SnackBar(content: Text("Under development")),
     );
   }
@@ -1402,9 +1553,15 @@ class _HomePageState extends State<HomePage> {
   }
 
   String _nextDueDate() {
-    final nextMonth =
-        DateTime(DateTime.now().year, DateTime.now().month + 1, 5);
-    return DateFormat('dd MMM yyyy').format(nextMonth);
+    final createdAt = _customerCreatedAt;
+    if (createdAt == null) return '-';
+
+    final now = DateTime.now();
+    DateTime dueDate = _dateWithCustomerDay(now.year, now.month, createdAt.day);
+    if (!dueDate.isAfter(now)) {
+      dueDate = _dateWithCustomerDay(now.year, now.month + 1, createdAt.day);
+    }
+    return DateFormat('dd MMM yyyy').format(dueDate);
   }
 
   String get _displayName {
@@ -1415,6 +1572,55 @@ class _HomePageState extends State<HomePage> {
   double _toDouble(dynamic value) {
     if (value is num) return value.toDouble();
     return double.tryParse('$value') ?? 0;
+  }
+
+  double get _customerBalance => _toDouble(_userData['balance']);
+
+  // double get _monthlyLimit => _toDouble(_userData['limit']);
+  double get _monthlyLimit {
+    final limit = '${_userData['limit'] ?? ''}'.trim();
+
+    if (limit.contains('-')) {
+      return double.tryParse(limit.split('-').first.trim()) ?? 0;
+    }
+
+    return double.tryParse(limit) ?? 0;
+  }
+
+  double get _schemeFullAmount => _monthlyLimit * 12;
+
+  double get _schemeProgress {
+    print(_customerBalance);
+    print(_schemeFullAmount);
+    final fullAmount = _schemeFullAmount;
+    if (fullAmount <= 0) return 0;
+    return (_customerBalance / fullAmount).clamp(0.0, 1.0);
+  }
+
+  int get _paidMonths {
+    final limit = _monthlyLimit;
+    if (limit <= 0) return 0;
+    return (_customerBalance / limit).floor().clamp(0, 12);
+  }
+
+  DateTime? get _customerCreatedAt {
+    final value = _userData['timestamp'] ??
+        _userData['createdAt'] ??
+        _userData['createDate'] ??
+        _userData['createdDate'];
+
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String && value.trim().isNotEmpty) {
+      return DateTime.tryParse(value);
+    }
+    return null;
+  }
+
+  DateTime _dateWithCustomerDay(int year, int month, int day) {
+    final lastDay = DateTime(year, month + 1, 0).day;
+    final safeDay = day.clamp(1, lastDay);
+    return DateTime(year, month, safeDay);
   }
 }
 
