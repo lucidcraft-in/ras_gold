@@ -461,47 +461,46 @@ class _TransactionListState extends State<TransactionList> {
                                         )
                                       ],
                                     ),
-                                    if (isExpanded) ...[
-                                      const Divider(height: 25),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text("Gram Price"),
-                                          Text(
-                                            transactionList[index]
-                                                    ['gramPriceInvestDay']
-                                                .toString(),
+                                    // if (isExpanded) ...[
+                                    const Divider(height: 25),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text("Gram Price"),
+                                        Text(
+                                          transactionList[index]
+                                                  ['gramPriceInvestDay']
+                                              .toString(),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        const Text("Gram Weight"),
+                                        Text(
+                                          transactionList[index]['gramWeight']
+                                              .toString(),
+                                        ),
+                                      ],
+                                    ),
+                                    if (transactionList[index]
+                                            ['transactionMode'] ==
+                                        "online")
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 10),
+                                        child: Text(
+                                          "Transaction ID : ${transactionList[index]['merchentTransactionId']}",
+                                          style: const TextStyle(
+                                            color: _muted,
+                                            fontSize: 12,
                                           ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          const Text("Gram Weight"),
-                                          Text(
-                                            transactionList[index]['gramWeight']
-                                                .toString(),
-                                          ),
-                                        ],
-                                      ),
-                                      if (transactionList[index]
-                                              ['transactionMode'] ==
-                                          "online")
-                                        Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 10),
-                                          child: Text(
-                                            "Transaction ID : ${transactionList[index]['merchentTransactionId']}",
-                                            style: const TextStyle(
-                                              color: _muted,
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        )
-                                    ]
+                                        ),
+                                      )
+                                    // ]
                                   ],
                                 ),
                               ),
