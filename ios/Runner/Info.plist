@@ -45,5 +45,13 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app requires access to your photo library to upload profile pictures and payment receipts.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>This app requires access to your camera to take photos for profile pictures and payment receipts.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app requires access to your microphone to record audio when capturing videos.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>This app requires permission to save photos and receipts to your library.</string>
 </dict>
 </plist>

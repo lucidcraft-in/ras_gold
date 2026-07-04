@@ -110,7 +110,7 @@ android {
         applicationId = "com.luzidcraft.raz_gold"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
+        versionCode = flutter.versionCode as Int
         versionName = flutter.versionName
         multiDexEnabled = true
     }
@@ -127,14 +127,8 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
-            isMinifyEnabled = false
-            isShrinkResources = false
-        }
-    }
-
-    packaging {
-        jniLibs {
-            keepDebugSymbols.add("**/*.so")
+            isMinifyEnabled = true
+            isShrinkResources = true
         }
     }
 }
