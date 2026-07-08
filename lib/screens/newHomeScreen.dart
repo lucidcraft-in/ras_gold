@@ -1,5 +1,6 @@
 // ignore_for_file: file_names
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,6 +20,7 @@ import '../providers/product.dart';
 import 'pdfload.dart/aboutUs.dart';
 import 'productView.dart';
 import 'profile.dart';
+import 'uploadPaymentImage/sendPaymentRecipt.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -53,6 +55,9 @@ class _HomePageState extends State<HomePage> {
   Map<String, dynamic> aboutUsData = {};
   Map<String, dynamic> _userData = {};
   String _userName = "";
+  StreamSubscription? _goldrateSubscription;
+  StreamSubscription? _transactionsSubscription;
+  int _transactionPaymentCount = 0;
 
   final List<Map<String, dynamic>> _fallbackCategories = const [
     {
@@ -119,8 +124,17 @@ class _HomePageState extends State<HomePage> {
     fetchData();
   }
 
+  @override
+  void dispose() {
+    _goldrateSubscription?.cancel();
+    _transactionsSubscription?.cancel();
+    super.dispose();
+  }
+
   void getGoldrate() {
-    Provider.of<Goldrate>(context, listen: false).read().then((value) {
+    _goldrateSubscription = Provider.of<Goldrate>(context, listen: false)
+        .getGoldrateStream()
+        .listen((value) {
       if (!mounted || value == null || value.isEmpty) return;
 
       final data = value[0];
@@ -180,12 +194,15 @@ class _HomePageState extends State<HomePage> {
           _userData = user;
           _userName = user['name'] ?? '';
         });
+        final String userId = '${user['id'] ?? ''}'.trim();
+        _listenToTransactions(userId);
         await _refreshUserData(user);
       }
     } else {
       setState(() {
         _userName = '';
       });
+      _listenToTransactions('');
     }
   }
 
@@ -203,12 +220,44 @@ class _HomePageState extends State<HomePage> {
         _userData = {...savedUser, ...data, 'id': doc.id};
         _userName = '${_userData['name'] ?? ''}';
       });
+      _listenToTransactions(doc.id);
       print("****************************");
       print(_userData);
       print("****************************");
     } catch (e) {
       debugPrint('Unable to refresh user details: $e');
     }
+  }
+
+  void _listenToTransactions(String userId) {
+    _transactionsSubscription?.cancel();
+    if (userId.isEmpty) {
+      setState(() {
+        _transactionPaymentCount = 0;
+      });
+      return;
+    }
+
+    _transactionsSubscription = FirebaseFirestore.instance
+        .collection('transactions')
+        .where('customerId', isEqualTo: userId)
+        .snapshots()
+        .listen((snapshot) {
+      int count = 0;
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        if (data['transactionType'] == 0) {
+          count++;
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _transactionPaymentCount = count;
+        });
+      }
+    }, onError: (error) {
+      debugPrint("Error listening to transactions: $error");
+    });
   }
 
   // void getGoldrate() {
@@ -441,8 +490,8 @@ class _HomePageState extends State<HomePage> {
                     Flexible(
                       child: Text(
                         'Total Gold Balance',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        // maxLines: 1,
+                        // overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -450,8 +499,8 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.visibility_outlined, color: _gold, size: 18),
+                    // SizedBox(width: 8),
+                    // Icon(Icons.visibility_outlined, color: _gold, size: 18),
                   ],
                 ),
                 const SizedBox(height: 6),
@@ -481,11 +530,11 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 7),
-                const Text(
-                  'Gold in your scheme',
-                  style: TextStyle(color: _muted, fontSize: 12),
-                ),
+                // const SizedBox(height: 7),
+                // const Text(
+                //   'Gold in your scheme',
+                //   style: TextStyle(color: _muted, fontSize: 12),
+                // ),
               ],
             ),
           ),
@@ -512,21 +561,21 @@ class _HomePageState extends State<HomePage> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 7),
-                Text(
-                  fullAmount > 0
-                      ? 'Target ${_money.format(fullAmount)}'
-                      : 'Total invested amount',
-                  style: const TextStyle(color: _muted, fontSize: 12),
-                ),
+                // const SizedBox(height: 7),
+                // Text(
+                //   fullAmount > 0
+                //       ? 'Target ${_money.format(fullAmount)}'
+                //       : 'Total invested amount',
+                //   style: const TextStyle(color: _muted, fontSize: 12),
+                // ),
               ],
             ),
           ),
           const SizedBox(width: 8),
           _goldButton(
-            label: 'Invest Now',
+            label: 'Attach Screenshot',
             icon: Icons.arrow_forward_rounded,
-            onTap: _openPayment,
+            onTap: () => _openPayment("attachment"),
           ),
         ],
       ),
@@ -542,7 +591,7 @@ class _HomePageState extends State<HomePage> {
             subtitle: 'Make quick payments',
             icon: Icons.payments_outlined,
             filled: true,
-            onTap: _openPayment,
+            onTap: () => _openPayment("online"),
           ),
         ),
         const SizedBox(width: 12),
@@ -719,7 +768,7 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 3),
                 Text(
                   fullAmount > 0
-                      ? '$paidMonths of 12 months paid'
+                      ? '$paidMonths of 11 months paid'
                       : 'Set monthly limit to track progress',
                   style: const TextStyle(color: _muted, fontSize: 12),
                 ),
@@ -1478,7 +1527,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _openPayment() {
+  void _openPayment(String type) {
     // if (_userName.isNotEmpty) {
     //   Navigator.push(
     //     context,
@@ -1489,13 +1538,20 @@ class _HomePageState extends State<HomePage> {
     // ScaffoldMessenger.of(context).showSnackBar(
     //   const SnackBar(content: Text("Please login to make a payment")),
     // );
-    final messenger = ScaffoldMessenger.of(context);
+    if (type == "attachment") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const SendPaymentRec()),
+      );
+    } else {
+      final messenger = ScaffoldMessenger.of(context);
 
-    // Navigator.pop(context);
+      // Navigator.pop(context);
 
-    messenger.showSnackBar(
-      const SnackBar(content: Text("Under development")),
-    );
+      messenger.showSnackBar(
+        const SnackBar(content: Text("Under development")),
+      );
+    }
   }
 
   void _openTransactions() {
@@ -1587,20 +1643,14 @@ class _HomePageState extends State<HomePage> {
     return double.tryParse(limit) ?? 0;
   }
 
-  double get _schemeFullAmount => _monthlyLimit * 12;
+  double get _schemeFullAmount => _monthlyLimit * 11;
 
   double get _schemeProgress {
-    print(_customerBalance);
-    print(_schemeFullAmount);
-    final fullAmount = _schemeFullAmount;
-    if (fullAmount <= 0) return 0;
-    return (_customerBalance / fullAmount).clamp(0.0, 1.0);
+    return (_paidMonths / 11.0).clamp(0.0, 1.0);
   }
 
   int get _paidMonths {
-    final limit = _monthlyLimit;
-    if (limit <= 0) return 0;
-    return (_customerBalance / limit).floor().clamp(0, 12);
+    return _transactionPaymentCount;
   }
 
   DateTime? get _customerCreatedAt {

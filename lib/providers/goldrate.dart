@@ -86,4 +86,26 @@ class Goldrate with ChangeNotifier {
     }
     return null;
   }
+
+  Stream<List> getGoldrateStream() {
+    return collectionReference.snapshots().map((querySnapshot) {
+      List goldaRateList = [];
+      if (querySnapshot.docs.isNotEmpty) {
+        for (var doc in querySnapshot.docs) {
+          Map a = {
+            "id": doc.id,
+            "gram": doc['gram'],
+            "pavan": doc["pavan"],
+            "down": doc["down"],
+            "up": doc["up"],
+            "18gram": doc["18gram"],
+            "updateDate": doc["updateDate"],
+            "updateTime": doc["updateTime"]
+          };
+          goldaRateList.add(a);
+        }
+      }
+      return goldaRateList;
+    });
+  }
 }

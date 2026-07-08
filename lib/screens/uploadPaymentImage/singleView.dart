@@ -66,8 +66,30 @@ class _SingleViewPaymentState extends State<SingleViewPayment> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text('Upload Screenshot'),
-        backgroundColor: Theme.of(context).primaryColor,
+        title: const Text(
+          'Upload Screenshot',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+          ),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: const Color(0xFF460218),
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF460218),
+                const Color(0xFF460218),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
       ),
       body: isLoad == true
           ? Padding(
@@ -170,8 +192,8 @@ class _SingleViewPaymentState extends State<SingleViewPayment> {
                             color: const Color.fromARGB(255, 185, 185, 185)),
                         borderRadius: BorderRadius.circular(8.0),
                       ),
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12.0, vertical: 10),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
